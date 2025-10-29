@@ -29,6 +29,7 @@ interface WasteBin {
   id: string
   waste_type: string
   capacity_percentage: number
+  current_weight: number
   needs_attention: boolean
   qr_code: string
 }
@@ -101,6 +102,7 @@ export function WorkerDashboard({ profile, stations: initialStations }: WorkerDa
         .from("waste_bins")
         .update({
           capacity_percentage: 0,
+          current_weight: 0,
           needs_attention: false,
         })
         .eq("id", selectedBin.bin.id)
@@ -304,6 +306,10 @@ export function WorkerDashboard({ profile, stations: initialStations }: WorkerDa
                     value={selectedBin.bin.capacity_percentage}
                     className={selectedBin.bin.needs_attention ? "[&>div]:bg-destructive" : ""}
                   />
+                  <div className="flex items-center justify-between text-sm pt-1">
+                    <span className="text-muted-foreground">Peso actual:</span>
+                    <span className="font-semibold">{selectedBin.bin.current_weight || 0} kg / 120 kg</span>
+                  </div>
                 </div>
 
                 <div className="rounded-lg bg-muted p-3 space-y-1">

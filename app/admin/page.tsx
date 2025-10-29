@@ -34,7 +34,7 @@ export default async function AdminPage() {
       .from("transactions")
       .select("waste_type, points_earned, created_at")
       .order("created_at", { ascending: true }),
-    supabase.from("waste_bins").select("waste_type, capacity_percentage, needs_attention, waste_stations(name)"),
+    supabase.from("waste_bins").select("waste_type, capacity_percentage, current_weight, needs_attention, waste_stations(name)"),
     supabase
       .from("redemptions")
       .select("*, profiles(full_name, email), products(name)")

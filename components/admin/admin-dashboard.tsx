@@ -43,6 +43,7 @@ interface Transaction {
 interface WasteBin {
   waste_type: string
   capacity_percentage: number
+  current_weight: number
   needs_attention: boolean
   waste_stations: {
     name: string
