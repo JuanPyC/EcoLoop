@@ -19,7 +19,7 @@ export default async function NewsPage() {
     redirect("/")
   }
 
-  const { data: news } = await supabase.from("news").select("*").order("created_at", { ascending: false })
+  const { data: news } = await supabase.from("news_articles").select("*").order("created_at", { ascending: false })
 
   const { data: quizzes } = await supabase.from("quizzes").select("*").order("created_at", { ascending: false })
 

@@ -29,9 +29,10 @@ interface Product {
   name: string
   description: string | null
   points_cost: number
-  stock_quantity: number
+  stock: number
   category: string
   image_url: string | null
+  is_available: boolean
   created_at: string
 }
 
@@ -61,9 +62,10 @@ export function ProductsManagement({ profile, products: initialProducts }: Produ
     name: "",
     description: "",
     points_cost: 0,
-    stock_quantity: 0,
+    stock: 0,
     category: "school_supplies",
     image_url: "",
+    is_available: true,
   })
 
   const filteredProducts = products.filter((product) => product.name.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -80,9 +82,10 @@ export function ProductsManagement({ profile, products: initialProducts }: Produ
           name: formData.name,
           description: formData.description || null,
           points_cost: formData.points_cost,
-          stock_quantity: formData.stock_quantity,
+          stock: formData.stock,
           category: formData.category,
           image_url: formData.image_url || null,
+          is_available: formData.is_available,
         },
       ])
 
@@ -98,9 +101,10 @@ export function ProductsManagement({ profile, products: initialProducts }: Produ
         name: "",
         description: "",
         points_cost: 0,
-        stock_quantity: 0,
+        stock: 0,
         category: "school_supplies",
         image_url: "",
+        is_available: true,
       })
       router.refresh()
     } catch (error: any) {
@@ -129,9 +133,10 @@ export function ProductsManagement({ profile, products: initialProducts }: Produ
           name: formData.name,
           description: formData.description || null,
           points_cost: formData.points_cost,
-          stock_quantity: formData.stock_quantity,
+          stock: formData.stock,
           category: formData.category,
           image_url: formData.image_url || null,
+          is_available: formData.is_available,
         })
         .eq("id", selectedProduct.id)
 
@@ -187,9 +192,10 @@ export function ProductsManagement({ profile, products: initialProducts }: Produ
       name: product.name,
       description: product.description || "",
       points_cost: product.points_cost,
-      stock_quantity: product.stock_quantity,
+      stock: product.stock,
       category: product.category,
       image_url: product.image_url || "",
+      is_available: product.is_available,
     })
     setIsEditOpen(true)
   }
@@ -277,14 +283,14 @@ export function ProductsManagement({ profile, products: initialProducts }: Produ
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="stock_quantity">Stock</Label>
+                        <Label htmlFor="stock">Stock</Label>
                         <Input
-                          id="stock_quantity"
+                          id="stock"
                           type="number"
                           min="0"
-                          value={formData.stock_quantity}
+                          value={formData.stock}
                           onChange={(e) =>
-                            setFormData({ ...formData, stock_quantity: Number.parseInt(e.target.value) })
+                            setFormData({ ...formData, stock: Number.parseInt(e.target.value) })
                           }
                           required
                         />
@@ -376,8 +382,8 @@ export function ProductsManagement({ profile, products: initialProducts }: Produ
                       </TableCell>
                       <TableCell>{product.points_cost} pts</TableCell>
                       <TableCell>
-                        <Badge variant={product.stock_quantity > 0 ? "default" : "destructive"}>
-                          {product.stock_quantity}
+                        <Badge variant={product.stock > 0 ? "default" : "destructive"}>
+                          {product.stock}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
@@ -437,13 +443,13 @@ export function ProductsManagement({ profile, products: initialProducts }: Produ
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit_stock_quantity">Stock</Label>
+                <Label htmlFor="edit_stock">Stock</Label>
                 <Input
-                  id="edit_stock_quantity"
+                  id="edit_stock"
                   type="number"
                   min="0"
-                  value={formData.stock_quantity}
-                  onChange={(e) => setFormData({ ...formData, stock_quantity: Number.parseInt(e.target.value) })}
+                  value={formData.stock}
+                  onChange={(e) => setFormData({ ...formData, stock: Number.parseInt(e.target.value) })}
                   required
                 />
               </div>

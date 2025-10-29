@@ -29,7 +29,7 @@ interface News {
   title: string
   content: string
   image_url: string | null
-  points_reward: number
+  published: boolean
   created_at: string
 }
 
@@ -73,7 +73,7 @@ export function ContentManagement({ profile, news: initialNews, quizzes: initial
     title: "",
     content: "",
     image_url: "",
-    points_reward: 5,
+    published: true,
   })
 
   const [quizFormData, setQuizFormData] = useState({
@@ -100,12 +100,13 @@ export function ContentManagement({ profile, news: initialNews, quizzes: initial
     try {
       const supabase = createClient()
 
-      const { error } = await supabase.from("news").insert([
+      const { error } = await supabase.from("news_articles").insert([
         {
           title: newsFormData.title,
           content: newsFormData.content,
           image_url: newsFormData.image_url || null,
-          points_reward: newsFormData.points_reward,
+          published: newsFormData.published,
+          author_id: profile.id,
         },
       ])
 
@@ -117,7 +118,7 @@ export function ContentManagement({ profile, news: initialNews, quizzes: initial
       })
 
       setIsCreateNewsOpen(false)
-      setNewsFormData({ title: "", content: "", image_url: "", points_reward: 5 })
+      setNewsFormData({ title: "", content: "", image_url: "", published: true })
       router.refresh()
     } catch (error: any) {
       toast({
@@ -137,16 +138,32 @@ export function ContentManagement({ profile, news: initialNews, quizzes: initial
     try {
       const supabase = createClient()
 
-      const { error } = await supabase.from("quizzes").insert([
+      // First, create the quiz
+      const { data: newQuiz, error: quizError } = await supabase.from("quizzes").insert([
         {
           title: quizFormData.title,
           description: quizFormData.description || null,
-          questions: quizFormData.questions,
           points_reward: quizFormData.points_reward,
+          is_active: true,
         },
-      ])
+      ]).select().single()
 
-      if (error) throw error
+      if (quizError) throw quizError
+
+      // Then, create the questions
+      const questionsToInsert = quizFormData.questions.map((q, index) => ({
+        quiz_id: newQuiz.id,
+        question: q.question,
+        correct_answer: q.options[q.correct_answer],
+        wrong_answer_1: q.options.filter((_, i) => i !== q.correct_answer)[0] || "",
+        wrong_answer_2: q.options.filter((_, i) => i !== q.correct_answer)[1] || "",
+        wrong_answer_3: q.options.filter((_, i) => i !== q.correct_answer)[2] || "",
+        order_index: index,
+      }))
+
+      const { error: questionsError } = await supabase.from("quiz_questions").insert(questionsToInsert)
+
+      if (questionsError) throw questionsError
 
       toast({
         title: "Quiz creado",
@@ -177,7 +194,7 @@ export function ContentManagement({ profile, news: initialNews, quizzes: initial
 
     try {
       const supabase = createClient()
-      const { error } = await supabase.from("news").delete().eq("id", newsId)
+      const { error } = await supabase.from("news_articles").delete().eq("id", newsId)
 
       if (error) throw error
 
@@ -317,19 +334,6 @@ export function ContentManagement({ profile, news: initialNews, quizzes: initial
                             placeholder="https://..."
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="news_points">Puntos de Recompensa</Label>
-                          <Input
-                            id="news_points"
-                            type="number"
-                            min="0"
-                            value={newsFormData.points_reward}
-                            onChange={(e) =>
-                              setNewsFormData({ ...newsFormData, points_reward: Number.parseInt(e.target.value) })
-                            }
-                            required
-                          />
-                        </div>
                         <Button type="submit" className="w-full" disabled={isLoading}>
                           {isLoading ? "Creando..." : "Publicar Noticia"}
                         </Button>
@@ -354,7 +358,7 @@ export function ContentManagement({ profile, news: initialNews, quizzes: initial
                     <TableHeader>
                       <TableRow>
                         <TableHead>Título</TableHead>
-                        <TableHead>Puntos</TableHead>
+                        <TableHead>Estado</TableHead>
                         <TableHead>Fecha</TableHead>
                         <TableHead className="text-right">Acciones</TableHead>
                       </TableRow>
@@ -382,7 +386,9 @@ export function ContentManagement({ profile, news: initialNews, quizzes: initial
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant="secondary">{item.points_reward} pts</Badge>
+                            <Badge variant={item.published ? "default" : "secondary"}>
+                              {item.published ? "Publicado" : "Borrador"}
+                            </Badge>
                           </TableCell>
                           <TableCell>{new Date(item.created_at).toLocaleDateString("es-ES")}</TableCell>
                           <TableCell className="text-right">
