@@ -11,6 +11,22 @@ const updateUserSchema = z.object({
   role: z.enum(["user", "worker", "admin"]).optional(),
 });
 
+/**
+ * @swagger
+ * /users:
+ *   get:
+ *     summary: List all users (admin only)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of users
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ */
 router.get("/", requireAuth, requireRole("admin"), async (req, res) => {
   const result = await query(
     `
@@ -23,6 +39,44 @@ router.get("/", requireAuth, requireRole("admin"), async (req, res) => {
   return res.status(200).json({ users: result.rows });
 });
 
+/**
+ * @swagger
+ * /users/{userId}:
+ *   patch:
+ *     summary: Update a user (admin only)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               full_name:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *                 enum: [user, worker, admin]
+ *     responses:
+ *       200:
+ *         description: User updated successfully
+ *       400:
+ *         description: Invalid data or empty payload
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: User not found
+ */
 router.patch("/:userId", requireAuth, requireRole("admin"), async (req, res) => {
   const parsed = updateUserSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -64,6 +118,32 @@ router.patch("/:userId", requireAuth, requireRole("admin"), async (req, res) => 
   return res.status(200).json({ user: result.rows[0] });
 });
 
+/**
+ * @swagger
+ * /users/{userId}:
+ *   delete:
+ *     summary: Delete a user (admin only)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User deleted successfully
+ *       400:
+ *         description: Cannot delete yourself
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: User not found
+ */
 router.delete("/:userId", requireAuth, requireRole("admin"), async (req, res) => {
   const { userId } = req.params;
 

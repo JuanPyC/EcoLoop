@@ -16,6 +16,22 @@ const productSchema = z.object({
   is_available: z.boolean().optional(),
 });
 
+/**
+ * @swagger
+ * /products:
+ *   get:
+ *     summary: List all products
+ *     tags: [Products]
+ *     parameters:
+ *       - in: query
+ *         name: all
+ *         schema:
+ *           type: string
+ *         description: Pass "1" to include unavailable products (admin only conceptually, though not enforced here)
+ *     responses:
+ *       200:
+ *         description: List of products
+ */
 router.get("/", async (req, res) => {
   const includeAll = req.query.all === "1";
 
@@ -31,6 +47,50 @@ router.get("/", async (req, res) => {
   return res.status(200).json({ products: result.rows });
 });
 
+/**
+ * @swagger
+ * /products:
+ *   post:
+ *     summary: Create a product (admin only)
+ *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - points_cost
+ *               - stock
+ *               - category
+ *             properties:
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               points_cost:
+ *                 type: integer
+ *               image_url:
+ *                 type: string
+ *               stock:
+ *                 type: integer
+ *               category:
+ *                 type: string
+ *               is_available:
+ *                 type: boolean
+ *     responses:
+ *       201:
+ *         description: Product created successfully
+ *       400:
+ *         description: Invalid data
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ */
 router.post("/", requireAuth, requireRole("admin"), async (req, res) => {
   const parsed = productSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -59,6 +119,53 @@ router.post("/", requireAuth, requireRole("admin"), async (req, res) => {
   return res.status(201).json({ product: result.rows[0] });
 });
 
+/**
+ * @swagger
+ * /products/{productId}:
+ *   patch:
+ *     summary: Update a product (admin only)
+ *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: productId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               points_cost:
+ *                 type: integer
+ *               image_url:
+ *                 type: string
+ *               stock:
+ *                 type: integer
+ *               category:
+ *                 type: string
+ *               is_available:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Product updated successfully
+ *       400:
+ *         description: Invalid data
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Product not found
+ */
 router.patch("/:productId", requireAuth, requireRole("admin"), async (req, res) => {
   const parsed = productSchema.partial().safeParse(req.body);
   if (!parsed.success) {
@@ -100,6 +207,30 @@ router.patch("/:productId", requireAuth, requireRole("admin"), async (req, res) 
   return res.status(200).json({ product: result.rows[0] });
 });
 
+/**
+ * @swagger
+ * /products/{productId}:
+ *   delete:
+ *     summary: Delete a product (admin only)
+ *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: productId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Product deleted successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Product not found
+ */
 router.delete("/:productId", requireAuth, requireRole("admin"), async (req, res) => {
   const { productId } = req.params;
 

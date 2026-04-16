@@ -26,6 +26,16 @@ const updateBinSchema = z.object({
   needs_attention: z.boolean().optional(),
 });
 
+/**
+ * @swagger
+ * /stations:
+ *   get:
+ *     summary: List all waste stations and their bins
+ *     tags: [Stations]
+ *     responses:
+ *       200:
+ *         description: List of stations
+ */
 router.get("/", async (req, res) => {
   const result = await query(
     `
@@ -78,6 +88,24 @@ router.get("/", async (req, res) => {
   return res.status(200).json({ stations: Array.from(stationsMap.values()) });
 });
 
+/**
+ * @swagger
+ * /stations/bins/qr/{qrCode}:
+ *   get:
+ *     summary: Get bin details by QR code
+ *     tags: [Stations]
+ *     parameters:
+ *       - in: path
+ *         name: qrCode
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Bin details
+ *       404:
+ *         description: Bin not found
+ */
 router.get("/bins/qr/:qrCode", async (req, res) => {
   const { qrCode } = req.params;
 
@@ -124,6 +152,36 @@ router.get("/bins/qr/:qrCode", async (req, res) => {
   return res.status(200).json({ bin });
 });
 
+/**
+ * @swagger
+ * /stations:
+ *   post:
+ *     summary: Create a waste station (admin only)
+ *     tags: [Stations]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - location
+ *             properties:
+ *               name:
+ *                 type: string
+ *               location:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Station created
+ *       401:
+ *         description: Unauthorized
+ */
 router.post("/", requireAuth, requireRole("admin"), async (req, res) => {
   const parsed = stationSchema.safeParse(req.body);
   if (!parsed.success) {

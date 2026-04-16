@@ -4,10 +4,41 @@ import { query } from "../lib/db.js";
 
 const router = Router();
 
+/**
+ * @swagger
+ * /profiles/me:
+ *   get:
+ *     summary: Get user profile
+ *     tags: [Profiles]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User profile
+ *       401:
+ *         description: Unauthorized
+ */
 router.get("/me", requireAuth, async (req, res) => {
   return res.status(200).json({ profile: req.user });
 });
 
+/**
+ * @swagger
+ * /profiles/leaderboard:
+ *   get:
+ *     summary: Get top users by eco points
+ *     tags: [Profiles]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: Max number of users to return
+ *     responses:
+ *       200:
+ *         description: Leaderboard ranking
+ */
 router.get("/leaderboard", async (req, res) => {
   const limit = Math.min(Number(req.query.limit ?? 20), 100);
 
@@ -24,6 +55,20 @@ router.get("/leaderboard", async (req, res) => {
   return res.status(200).json({ leaderboard: result.rows });
 });
 
+/**
+ * @swagger
+ * /profiles/me/transactions:
+ *   get:
+ *     summary: Get current authenticated user transactions
+ *     tags: [Profiles]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User transactions
+ *       401:
+ *         description: Unauthorized
+ */
 router.get("/me/transactions", requireAuth, async (req, res) => {
   const result = await query(
     `
