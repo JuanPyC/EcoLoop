@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Leaf, LogOut, Users, TrendingUp, Coins, BarChart3, UserPlus, Settings } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { createClient } from "@/lib/api/client"
 import {
   BarChart,
   Bar,
@@ -82,8 +82,8 @@ export function AdminDashboard({ profile, stats, transactions, wasteBins, recent
   const router = useRouter()
 
   const handleSignOut = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
+    const apiClient = createClient()
+    await apiClient.auth.signOut()
     router.push("/auth/login")
   }
 

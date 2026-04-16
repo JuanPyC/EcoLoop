@@ -21,7 +21,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Leaf, ArrowLeft, Plus, Trash2, Search, FileText, HelpCircle } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { createClient } from "@/lib/api/client"
 import { useToast } from "@/hooks/use-toast"
 
 interface News {
@@ -98,9 +98,9 @@ export function ContentManagement({ profile, news: initialNews, quizzes: initial
     setIsLoading(true)
 
     try {
-      const supabase = createClient()
+      const apiClient = createClient()
 
-      const { error } = await supabase.from("news_articles").insert([
+      const { error } = await apiClient.from("news_articles").insert([
         {
           title: newsFormData.title,
           content: newsFormData.content,
@@ -136,10 +136,10 @@ export function ContentManagement({ profile, news: initialNews, quizzes: initial
     setIsLoading(true)
 
     try {
-      const supabase = createClient()
+      const apiClient = createClient()
 
       // First, create the quiz
-      const { data: newQuiz, error: quizError } = await supabase.from("quizzes").insert([
+      const { data: newQuiz, error: quizError } = await apiClient.from("quizzes").insert([
         {
           title: quizFormData.title,
           description: quizFormData.description || null,
@@ -161,7 +161,7 @@ export function ContentManagement({ profile, news: initialNews, quizzes: initial
         order_index: index,
       }))
 
-      const { error: questionsError } = await supabase.from("quiz_questions").insert(questionsToInsert)
+      const { error: questionsError } = await apiClient.from("quiz_questions").insert(questionsToInsert)
 
       if (questionsError) throw questionsError
 
@@ -193,8 +193,8 @@ export function ContentManagement({ profile, news: initialNews, quizzes: initial
     if (!confirm("¿Estás seguro de eliminar esta noticia?")) return
 
     try {
-      const supabase = createClient()
-      const { error } = await supabase.from("news_articles").delete().eq("id", newsId)
+      const apiClient = createClient()
+      const { error } = await apiClient.from("news_articles").delete().eq("id", newsId)
 
       if (error) throw error
 
@@ -217,8 +217,8 @@ export function ContentManagement({ profile, news: initialNews, quizzes: initial
     if (!confirm("¿Estás seguro de eliminar este quiz?")) return
 
     try {
-      const supabase = createClient()
-      const { error } = await supabase.from("quizzes").delete().eq("id", quizId)
+      const apiClient = createClient()
+      const { error } = await apiClient.from("quizzes").delete().eq("id", quizId)
 
       if (error) throw error
 

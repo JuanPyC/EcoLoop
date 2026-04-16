@@ -1,27 +1,27 @@
-import { createClient } from "@/lib/supabase/server"
+import { createClient } from "@/lib/api/server"
 import { redirect } from "next/navigation"
 import { ContentManagement } from "@/components/admin/content-management"
 
 export default async function NewsPage() {
-  const supabase = await createClient()
+  const apiClient = await createClient()
 
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await apiClient.auth.getUser()
 
   if (!user) {
     redirect("/auth/login")
   }
 
-  const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
+  const { data: profile } = await apiClient.from("profiles").select("*").eq("id", user.id).single()
 
   if (!profile || profile.role !== "admin") {
     redirect("/")
   }
 
-  const { data: news } = await supabase.from("news_articles").select("*").order("created_at", { ascending: false })
+  const { data: news } = await apiClient.from("news_articles").select("*").order("created_at", { ascending: false })
 
-  const { data: quizzes } = await supabase.from("quizzes").select("*").order("created_at", { ascending: false })
+  const { data: quizzes } = await apiClient.from("quizzes").select("*").order("created_at", { ascending: false })
 
   return <ContentManagement profile={profile} news={news || []} quizzes={quizzes || []} />
 }

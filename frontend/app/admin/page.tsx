@@ -1,20 +1,20 @@
 import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
+import { createClient } from "@/lib/api/server"
 import { AdminDashboard } from "@/components/admin/admin-dashboard"
 
 export default async function AdminPage() {
-  const supabase = await createClient()
+  const apiClient = await createClient()
 
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await apiClient.auth.getUser()
 
   if (!user) {
     redirect("/auth/login")
   }
 
   // Get user profile
-  const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
+  const { data: profile } = await apiClient.from("profiles").select("*").eq("id", user.id).single()
 
   if (!profile || profile.role !== "admin") {
     redirect("/auth/login")
@@ -28,14 +28,14 @@ export default async function AdminPage() {
     { data: wasteBins },
     { data: recentRedemptions },
   ] = await Promise.all([
-    supabase.from("profiles").select("*", { count: "exact", head: true }).eq("role", "user"),
-    supabase.from("transactions").select("*", { count: "exact", head: true }),
-    supabase
+    apiClient.from("profiles").select("*", { count: "exact", head: true }).eq("role", "user"),
+    apiClient.from("transactions").select("*", { count: "exact", head: true }),
+    apiClient
       .from("transactions")
       .select("waste_type, points_earned, created_at")
       .order("created_at", { ascending: true }),
-    supabase.from("waste_bins").select("waste_type, capacity_percentage, current_weight, needs_attention, waste_stations(name)"),
-    supabase
+    apiClient.from("waste_bins").select("waste_type, capacity_percentage, current_weight, needs_attention, waste_stations(name)"),
+    apiClient
       .from("redemptions")
       .select("*, profiles(full_name, email), products(name)")
       .order("created_at", { ascending: false })
@@ -43,7 +43,7 @@ export default async function AdminPage() {
   ])
 
   // Calculate total points redeemed
-  const { data: redemptions } = await supabase.from("redemptions").select("points_spent")
+  const { data: redemptions } = await apiClient.from("redemptions").select("points_spent")
   const totalPointsRedeemed = redemptions?.reduce((sum, r) => sum + r.points_spent, 0) || 0
 
   return (

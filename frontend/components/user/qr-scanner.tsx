@@ -5,25 +5,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { createClient } from "@/lib/supabase/client"
+import { createClient } from "@/lib/api/client"
+import { getApiBaseUrl } from "@/lib/api/config"
+import { getBrowserToken } from "@/lib/api/token"
 import { Camera, CheckCircle2, XCircle, Loader2 } from "lucide-react"
 import { Html5Qrcode } from "html5-qrcode"
 
 interface QrScannerProps {
   userId: string
   onScanSuccess: () => void
-}
-
-const POINTS_BY_TYPE = {
-  recyclable: 10,
-  organic: 8,
-  non_recyclable: 5,
-}
-
-const POINTS_PER_KG = {
-  recyclable: 2,
-  organic: 1.5,
-  non_recyclable: 1,
 }
 
 const MAX_CAPACITY_KG = 120
@@ -136,13 +126,13 @@ export function QrScanner({ userId, onScanSuccess }: QrScannerProps) {
   }
 
   const handleScan = async (qrCode: string) => {
-    const supabase = createClient()
+    const apiClient = createClient()
 
     try {
       console.log("[v0] Scanned QR code:", qrCode)
 
       // Find the waste bin by QR code
-      const { data: bin, error: binError } = await supabase
+      const { data: bin, error: binError } = await apiClient
         .from("waste_bins")
         .select(
           `
@@ -181,7 +171,6 @@ export function QrScanner({ userId, onScanSuccess }: QrScannerProps) {
     if (!scannedBin || !wasteAmount) return
 
     setIsSubmitting(true)
-    const supabase = createClient()
 
     try {
       const amount = Number.parseFloat(wasteAmount)
@@ -195,8 +184,6 @@ export function QrScanner({ userId, onScanSuccess }: QrScannerProps) {
       }
 
       const currentWeight = scannedBin.current_weight || 0
-      const newWeight = Math.min(currentWeight + amount, MAX_CAPACITY_KG)
-      const newCapacity = Math.round((newWeight / MAX_CAPACITY_KG) * 100)
 
       // Check if bin is full
       if (currentWeight >= MAX_CAPACITY_KG) {
@@ -208,39 +195,30 @@ export function QrScanner({ userId, onScanSuccess }: QrScannerProps) {
         return
       }
 
-      // Calculate points based on waste type and amount
-      const basePoints = POINTS_BY_TYPE[scannedBin.waste_type as keyof typeof POINTS_BY_TYPE]
-      const pointsPerKg = POINTS_PER_KG[scannedBin.waste_type as keyof typeof POINTS_PER_KG]
-      const totalPoints = Math.round(basePoints + amount * pointsPerKg)
+      const token = getBrowserToken()
+      if (!token) {
+        throw new Error("Sesion expirada. Inicia sesion nuevamente.")
+      }
 
-      console.log("[v0] Depositing:", { amount, currentWeight, newWeight, newCapacity, totalPoints })
-
-      // Create transaction
-      const { error: transactionError } = await supabase.from("transactions").insert({
-        user_id: userId,
-        bin_id: scannedBin.id,
-        points_earned: totalPoints,
-        waste_type: scannedBin.waste_type,
+      const response = await fetch(`${getApiBaseUrl()}/api/deposits`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          qrCode: scannedBin.qr_code,
+          amount,
+        }),
       })
 
-      if (transactionError) {
-        console.error("[v0] Transaction error:", transactionError)
-        throw transactionError
+      const body = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        throw new Error(body?.error || "No se pudo registrar el deposito")
       }
 
-      const { error: updateError } = await supabase
-        .from("waste_bins")
-        .update({
-          capacity_percentage: newCapacity,
-          current_weight: newWeight,
-          needs_attention: newCapacity >= 80,
-        })
-        .eq("id", scannedBin.id)
-
-      if (updateError) {
-        console.error("[v0] Update error:", updateError)
-        throw updateError
-      }
+      const pointsEarned = body?.result?.pointsEarned ?? 0
+      const newCapacity = body?.result?.newCapacity ?? 0
 
       const wasteTypeLabel =
         scannedBin.waste_type === "recyclable"
@@ -251,8 +229,8 @@ export function QrScanner({ userId, onScanSuccess }: QrScannerProps) {
 
       setScanResult({
         success: true,
-        message: `¡Excelente! Has depositado ${amount}kg de residuos ${wasteTypeLabel} en ${scannedBin.waste_stations.name} y ganado ${totalPoints} EcoPoints. Capacidad actual: ${newCapacity}%`,
-        points: totalPoints,
+        message: `¡Excelente! Has depositado ${amount}kg de residuos ${wasteTypeLabel} en ${scannedBin.waste_stations.name} y ganado ${pointsEarned} EcoPoints. Capacidad actual: ${newCapacity}%`,
+        points: pointsEarned,
       })
 
       setScannedBin(null)

@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { createClient } from "@/lib/supabase/client"
+import { createClient } from "@/lib/api/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -23,7 +23,7 @@ export default function RegisterPage() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
-    const supabase = createClient()
+    const apiClient = createClient()
     setIsLoading(true)
     setError(null)
 
@@ -40,11 +40,10 @@ export default function RegisterPage() {
     }
 
     try {
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { error: signUpError } = await apiClient.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/user`,
           data: {
             full_name: fullName,
             role: "user",

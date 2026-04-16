@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { createClient } from "@/lib/supabase/client"
+import { createClient } from "@/lib/api/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -21,12 +21,12 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    const supabase = createClient()
+    const apiClient = createClient()
     setIsLoading(true)
     setError(null)
 
     try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { error: signInError } = await apiClient.auth.signInWithPassword({
         email,
         password,
       })
@@ -36,10 +36,10 @@ export default function LoginPage() {
       // Get user profile to check role
       const {
         data: { user },
-      } = await supabase.auth.getUser()
+      } = await apiClient.auth.getUser()
       if (!user) throw new Error("No se pudo obtener el usuario")
 
-      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single()
+      const { data: profile } = await apiClient.from("profiles").select("role").eq("id", user.id).single()
 
       // Redirect based on role
       if (profile?.role === "admin") {

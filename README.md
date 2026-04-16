@@ -18,14 +18,6 @@ Y un compose raíz para orquestar todo:
 
 ### Levantar todo el stack
 
-Opcional: exporta tus credenciales de Supabase para que el frontend use tu proyecto real.
-Si no las defines, `docker-compose.yml` usa valores de ejemplo para evitar error por variables faltantes.
-
-```bash
-export NEXT_PUBLIC_SUPABASE_URL="https://tu-proyecto.supabase.co"
-export NEXT_PUBLIC_SUPABASE_ANON_KEY="tu-anon-key"
-```
-
 ```bash
 docker compose up -d --build
 ```

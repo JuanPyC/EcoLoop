@@ -1,27 +1,27 @@
 import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
+import { createClient } from "@/lib/api/server"
 import { WorkerDashboard } from "@/components/worker/worker-dashboard"
 
 export default async function WorkerPage() {
-  const supabase = await createClient()
+  const apiClient = await createClient()
 
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await apiClient.auth.getUser()
 
   if (!user) {
     redirect("/auth/login")
   }
 
   // Get user profile
-  const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
+  const { data: profile } = await apiClient.from("profiles").select("*").eq("id", user.id).single()
 
   if (!profile || (profile.role !== "worker" && profile.role !== "admin")) {
     redirect("/auth/login")
   }
 
   // Get all waste stations with their bins
-  const { data: stations } = await supabase
+  const { data: stations } = await apiClient
     .from("waste_stations")
     .select(
       `

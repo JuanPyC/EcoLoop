@@ -20,7 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Leaf, ArrowLeft, UserPlus, Pencil, Trash2, Search } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { createClient } from "@/lib/api/client"
 import { useToast } from "@/hooks/use-toast"
 
 interface Profile {
@@ -65,10 +65,10 @@ export function UsersManagement({ profile, users: initialUsers }: UsersManagemen
     setIsLoading(true)
 
     try {
-      const supabase = createClient()
+      const apiClient = createClient()
 
       // Create auth user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const { data: authData, error: authError } = await apiClient.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
@@ -83,7 +83,7 @@ export function UsersManagement({ profile, users: initialUsers }: UsersManagemen
 
       if (authData.user) {
         // Update profile with role
-        const { error: profileError } = await supabase
+        const { error: profileError } = await apiClient
           .from("profiles")
           .update({
             full_name: formData.full_name,
@@ -120,9 +120,9 @@ export function UsersManagement({ profile, users: initialUsers }: UsersManagemen
     setIsLoading(true)
 
     try {
-      const supabase = createClient()
+      const apiClient = createClient()
 
-      const { error } = await supabase
+      const { error } = await apiClient
         .from("profiles")
         .update({
           full_name: formData.full_name,
@@ -155,9 +155,9 @@ export function UsersManagement({ profile, users: initialUsers }: UsersManagemen
     if (!confirm("¿Estás seguro de eliminar este usuario?")) return
 
     try {
-      const supabase = createClient()
+      const apiClient = createClient()
 
-      const { error } = await supabase.from("profiles").delete().eq("id", userId)
+      const { error } = await apiClient.from("profiles").delete().eq("id", userId)
 
       if (error) throw error
 

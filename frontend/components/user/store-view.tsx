@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { createClient } from "@/lib/supabase/client"
+import { createClient } from "@/lib/api/client"
 import { ArrowLeft, ShoppingCart, Package, CheckCircle2, Coins } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -67,7 +67,7 @@ export function StoreView({ profile: initialProfile, products, redemptions: init
     if (!selectedProduct) return
 
     setIsRedeeming(true)
-    const supabase = createClient()
+    const apiClient = createClient()
 
     try {
       // Check if user has enough points
@@ -83,7 +83,7 @@ export function StoreView({ profile: initialProfile, products, redemptions: init
       }
 
       // Create redemption
-      const { error } = await supabase.from("redemptions").insert({
+      const { error } = await apiClient.from("redemptions").insert({
         user_id: profile.id,
         product_id: selectedProduct.id,
         points_spent: selectedProduct.points_cost,
@@ -94,14 +94,14 @@ export function StoreView({ profile: initialProfile, products, redemptions: init
       if (error) throw error
 
       // Refresh profile
-      const { data: newProfile } = await supabase.from("profiles").select("*").eq("id", profile.id).single()
+      const { data: newProfile } = await apiClient.from("profiles").select("*").eq("id", profile.id).single()
 
       if (newProfile) {
         setProfile(newProfile)
       }
 
       // Refresh redemptions
-      const { data: newRedemptions } = await supabase
+      const { data: newRedemptions } = await apiClient
         .from("redemptions")
         .select(
           `

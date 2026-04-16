@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
-import { createClient } from "@/lib/supabase/client"
+import { createClient } from "@/lib/api/client"
 import { ArrowLeft, CheckCircle2, XCircle, Trophy } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -84,7 +84,7 @@ export function QuizView({ profile, quiz, questions }: QuizViewProps) {
 
   const handleComplete = async (lastAnswerCorrect: boolean) => {
     setIsSubmitting(true)
-    const supabase = createClient()
+    const apiClient = createClient()
 
     const allAnswers = [
       ...answers,
@@ -99,7 +99,7 @@ export function QuizView({ profile, quiz, questions }: QuizViewProps) {
     const pointsEarned = Math.round((score / questions.length) * quiz.points_reward)
 
     try {
-      const { error } = await supabase.from("quiz_completions").insert({
+      const { error } = await apiClient.from("quiz_completions").insert({
         user_id: profile.id,
         quiz_id: quiz.id,
         score,

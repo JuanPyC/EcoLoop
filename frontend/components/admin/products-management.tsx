@@ -21,7 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Leaf, ArrowLeft, Plus, Pencil, Trash2, Search, Package } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { createClient } from "@/lib/api/client"
 import { useToast } from "@/hooks/use-toast"
 
 interface Product {
@@ -75,9 +75,9 @@ export function ProductsManagement({ profile, products: initialProducts }: Produ
     setIsLoading(true)
 
     try {
-      const supabase = createClient()
+      const apiClient = createClient()
 
-      const { error } = await supabase.from("products").insert([
+      const { error } = await apiClient.from("products").insert([
         {
           name: formData.name,
           description: formData.description || null,
@@ -125,9 +125,9 @@ export function ProductsManagement({ profile, products: initialProducts }: Produ
     setIsLoading(true)
 
     try {
-      const supabase = createClient()
+      const apiClient = createClient()
 
-      const { error } = await supabase
+      const { error } = await apiClient
         .from("products")
         .update({
           name: formData.name,
@@ -165,9 +165,9 @@ export function ProductsManagement({ profile, products: initialProducts }: Produ
     if (!confirm("¿Estás seguro de eliminar este producto?")) return
 
     try {
-      const supabase = createClient()
+      const apiClient = createClient()
 
-      const { error } = await supabase.from("products").delete().eq("id", productId)
+      const { error } = await apiClient.from("products").delete().eq("id", productId)
 
       if (error) throw error
 

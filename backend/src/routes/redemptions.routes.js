@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { requireAuth } from "../middleware/auth.js";
+import { requireRole } from "../middleware/roles.js";
 import { query, withTransaction } from "../lib/db.js";
 
 const router = Router();
@@ -121,6 +122,47 @@ router.get("/mine", requireAuth, async (req, res) => {
       name: row.name,
       category: row.category,
       image_url: row.image_url,
+    },
+  }));
+
+  return res.status(200).json({ redemptions });
+});
+
+router.get("/", requireAuth, requireRole("admin"), async (req, res) => {
+  const limit = Math.min(Number(req.query.limit ?? 100), 500);
+
+  const result = await query(
+    `
+      SELECT
+        r.id,
+        r.quantity,
+        r.points_spent,
+        r.status,
+        r.created_at,
+        u.full_name,
+        u.email,
+        p.name AS product_name
+      FROM redemptions r
+      JOIN users u ON u.id = r.user_id
+      JOIN products p ON p.id = r.product_id
+      ORDER BY r.created_at DESC
+      LIMIT $1
+    `,
+    [limit],
+  );
+
+  const redemptions = result.rows.map((row) => ({
+    id: row.id,
+    quantity: row.quantity,
+    points_spent: row.points_spent,
+    status: row.status,
+    created_at: row.created_at,
+    profiles: {
+      full_name: row.full_name,
+      email: row.email,
+    },
+    products: {
+      name: row.product_name,
     },
   }));
 

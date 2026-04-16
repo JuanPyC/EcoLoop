@@ -1,19 +1,19 @@
 import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
+import { createClient } from "@/lib/api/server"
 
 export default async function HomePage() {
-  const supabase = await createClient()
+  const apiClient = await createClient()
 
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await apiClient.auth.getUser()
 
   if (!user) {
     redirect("/auth/login")
   }
 
   // Get user profile to check role
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single()
+  const { data: profile } = await apiClient.from("profiles").select("role").eq("id", user.id).single()
 
   // Redirect based on role
   if (profile?.role === "admin") {

@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { QrScanner } from "@/components/user/qr-scanner"
 import { TransactionHistory } from "@/components/user/transaction-history"
 import { Leaf, QrCode, History, Store, Newspaper, LogOut } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
+import { createClient } from "@/lib/api/client"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 
@@ -45,23 +45,23 @@ export function UserDashboard({ profile: initialProfile, transactions: initialTr
   const router = useRouter()
 
   const handleSignOut = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
+    const apiClient = createClient()
+    await apiClient.auth.signOut()
     router.push("/auth/login")
   }
 
   const refreshData = async () => {
-    const supabase = createClient()
+    const apiClient = createClient()
 
     // Refresh profile
-    const { data: newProfile } = await supabase.from("profiles").select("*").eq("id", profile.id).single()
+    const { data: newProfile } = await apiClient.from("profiles").select("*").eq("id", profile.id).single()
 
     if (newProfile) {
       setProfile(newProfile)
     }
 
     // Refresh transactions
-    const { data: newTransactions } = await supabase
+    const { data: newTransactions } = await apiClient
       .from("transactions")
       .select(
         `

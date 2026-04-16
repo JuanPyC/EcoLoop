@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { createClient } from "@/lib/supabase/client"
+import { createClient } from "@/lib/api/client"
 import { Leaf, LogOut, AlertTriangle, MapPin, Trash2, Recycle, Search } from "lucide-react"
 import { useRouter } from "next/navigation"
 
@@ -76,8 +76,8 @@ export function WorkerDashboard({ profile, stations: initialStations }: WorkerDa
   const router = useRouter()
 
   const handleSignOut = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
+    const apiClient = createClient()
+    await apiClient.auth.signOut()
     router.push("/auth/login")
   }
 
@@ -95,10 +95,10 @@ export function WorkerDashboard({ profile, stations: initialStations }: WorkerDa
     if (!selectedBin) return
 
     setIsUpdating(true)
-    const supabase = createClient()
+    const apiClient = createClient()
 
     try {
-      const { error } = await supabase
+      const { error } = await apiClient
         .from("waste_bins")
         .update({
           capacity_percentage: 0,
@@ -110,7 +110,7 @@ export function WorkerDashboard({ profile, stations: initialStations }: WorkerDa
       if (error) throw error
 
       // Refresh stations
-      const { data: newStations } = await supabase
+      const { data: newStations } = await apiClient
         .from("waste_stations")
         .select(
           `

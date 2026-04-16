@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dialog"
 import { Leaf, ArrowLeft, Plus, Pencil, Trash2, Search, MapPin, QrCode, Download } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { createClient } from "@/lib/api/client"
 import { useToast } from "@/hooks/use-toast"
 import QRCode from "qrcode"
 
@@ -76,9 +76,9 @@ export function StationsManagement({ profile, stations: initialStations }: Stati
     setIsLoading(true)
 
     try {
-      const supabase = createClient()
+      const apiClient = createClient()
 
-      const { data: newStation, error: stationError } = await supabase
+      const { data: newStation, error: stationError } = await apiClient
         .from("waste_stations")
         .insert([
           {
@@ -115,7 +115,7 @@ export function StationsManagement({ profile, stations: initialStations }: Stati
         },
       ]
 
-      const { error: binsError } = await supabase.from("waste_bins").insert(bins)
+      const { error: binsError } = await apiClient.from("waste_bins").insert(bins)
 
       if (binsError) throw binsError
 
@@ -145,9 +145,9 @@ export function StationsManagement({ profile, stations: initialStations }: Stati
     setIsLoading(true)
 
     try {
-      const supabase = createClient()
+      const apiClient = createClient()
 
-      const { error } = await supabase
+      const { error } = await apiClient
         .from("waste_stations")
         .update({
           name: formData.name,
@@ -181,9 +181,9 @@ export function StationsManagement({ profile, stations: initialStations }: Stati
 
     setIsLoading(true)
     try {
-      const supabase = createClient()
+      const apiClient = createClient()
 
-      const { error } = await supabase.from("waste_stations").delete().eq("id", stationId)
+      const { error } = await apiClient.from("waste_stations").delete().eq("id", stationId)
 
       if (error) {
         console.error("[v0] Delete error:", error)

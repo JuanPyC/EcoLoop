@@ -7,6 +7,8 @@ import profilesRoutes from "./profiles.routes.js";
 import quizzesRoutes from "./quizzes.routes.js";
 import redemptionsRoutes from "./redemptions.routes.js";
 import stationsRoutes from "./stations.routes.js";
+import transactionsRoutes from "./transactions.routes.js";
+import usersRoutes from "./users.routes.js";
 import workerRoutes from "./worker.routes.js";
 
 const router = Router();
@@ -28,5 +30,7 @@ router.use("/redemptions", redemptionsRoutes);
 router.use("/news", newsRoutes);
 router.use("/quizzes", quizzesRoutes);
 router.use("/worker", workerRoutes);
+router.use("/users", usersRoutes);
+router.use("/transactions", transactionsRoutes);
 
 export default router;
