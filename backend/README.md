@@ -15,7 +15,7 @@ Backend construido con Express, autenticacion JWT y conectividad a base de datos
 ## Requisitos Previos
 
 - Node.js 20+
-- (Opcional pero Recomendado) Docker + Docker Compose
+- Docker Engine y Docker Compose para ejecución aislada.
 
 ## Variables de entorno
 
