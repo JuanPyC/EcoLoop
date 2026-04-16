@@ -1,48 +1,83 @@
-# EcoLoop Backend (Express + PostgreSQL)
+# EcoLoop Backend
 
-Backend local con Express, autenticacion JWT y base de datos PostgreSQL en Docker.
+Backend construido con Express, autenticacion JWT y conectividad a base de datos PostgreSQL, preparado para contenedores Docker.
 
-## Requisitos
+## Tecnologías y Versiones
+
+- **Node.js**: 20 (Alpine Docker image)
+- **Express**: 4.21.2
+- **PostgreSQL**: 16 (Imagen Docker) / Driver `pg` 8.16.3
+- **Zod**: 3.25.76
+- **JSON Web Token**: 9.0.2
+- **Swagger UI Express**: 5.0.1
+- **Swagger JSDoc**: 6.2.8
+
+## Requisitos Previos
 
 - Node.js 20+
-- Docker + Docker Compose
+- (Opcional pero Recomendado) Docker + Docker Compose
 
 ## Variables de entorno
 
-Copia `.env.example` a `.env`.
+Copia `.env.example` a `.env` y ajusta los valores de la base de datos si es necesario:
 
-- `PORT`
-- `NODE_ENV`
-- `FRONTEND_ORIGIN`
-- `DATABASE_URL`
-- `JWT_SECRET`
-- `JWT_EXPIRES_IN`
-
-## Levantar PostgreSQL local
-
-```bash
-docker compose up -d
+```env
+PORT=4000
+NODE_ENV=development
+FRONTEND_ORIGIN=http://localhost:3000
+DATABASE_URL=postgres://ecoloop:ecoloop@localhost:5432/ecoloop
+JWT_SECRET=super-secret-change-me
+JWT_EXPIRES_IN=7d
 ```
 
-Al iniciar por primera vez, PostgreSQL ejecuta:
+## Ejecutar de forma Local
 
-- [backend/docker/init/001_schema.sql](docker/init/001_schema.sql)
-- [backend/docker/init/002_seed.sql](docker/init/002_seed.sql)
+Para correr el backend directamente en tu máquina:
 
-Credenciales seeded (password: `password`):
+1. **Instalar dependencias:**
+   ```bash
+   npm install
+   ```
 
-- admin@ecoloop.local
-- worker@ecoloop.local
-- user@ecoloop.local
+2. **Levantar PostgreSQL localmente:**
+   Puedes usar el script incluido para iniciar solo la DB en docker:
+   ```bash
+   npm run db:up
+   ```
+   *(Al iniciar por primera vez, ejecutará los seeders `001_schema.sql` y `002_seed.sql`)*. Credenciales de prueba: admin@ecoloop.local, worker@ecoloop.local, user@ecoloop.local (password: `password`).
 
-## Instalar y ejecutar backend
+3. **Iniciar el servidor en modo desarrollo:**
+   ```bash
+   npm run dev
+   ```
 
-```bash
-npm install
-npm run dev
-```
+El API estará disponible en `http://localhost:4000`.
 
-API disponible por defecto en `http://localhost:4000`.
+## Ejecutar con Docker
+
+Para levantar el backend encapsulado en Docker:
+
+1. **Utilizando el orquestador principal (Recomendado):**
+   Sitúate en la raíz del proyecto (`../EcoLoop`) e inicia los servicios:
+   ```bash
+   docker compose up -d --build
+   ```
+   *Esto levantará el backend conectado a la subnet de Docker del Postgres automáticamente.*
+
+2. **Apagar infraestructura local:**
+   ```bash
+   npm run db:down
+   # O en la raíz: docker compose down
+   ```
+
+
+## Documentación de la API (Swagger)
+
+La API cuenta con documentación interactiva generada con Swagger (OpenAPI 3.0). Una vez iniciado el backend, puedes acceder a ella en tu navegador en:
+
+👉 **[http://localhost:4000/api-docs](http://localhost:4000/api-docs)**
+
+Esta interfaz visual expone detalles de los endpoints y te permite realizar peticiones de prueba (incluso añadiendo tu token JWT en el apartado "Authorize").
 
 ## Endpoints
 
