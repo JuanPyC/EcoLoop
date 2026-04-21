@@ -1,0 +1,87 @@
+version: "3.9"
+
+services:
+  # ─────────────────────────────────────────────
+  # BASE DE DATOS — PostgreSQL
+  # ─────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: ecoloop-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ecoloop
+      POSTGRES_USER: ecoloop_user
+      POSTGRES_PASSWORD: ecoloop_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ecoloop_user -d ecoloop"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────────────
+  # BACKEND — Express + Swagger
+  # ─────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ecoloop-backend
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+      NODE_ENV: production
+      # Conexión a PostgreSQL local (para pruebas sin Supabase)
+      DATABASE_URL: postgresql://ecoloop_user:ecoloop_pass@db:5432/ecoloop
+      # Supabase (reemplazar con tus credenciales reales)
+      SUPABASE_URL: ${SUPABASE_URL:-https://tu-proyecto.supabase.co}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-tu-anon-key}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-tu-service-key}
+      FRONTEND_URL: http://localhost:3000
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/api/health || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # ─────────────────────────────────────────────
+  # FRONTEND — Next.js
+  # ─────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${SUPABASE_URL:-https://tu-proyecto.supabase.co}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-tu-anon-key}
+        NEXT_PUBLIC_API_URL: http://localhost:3001
+    container_name: ecoloop-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_SUPABASE_URL: ${SUPABASE_URL:-https://tu-proyecto.supabase.co}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-tu-anon-key}
+      NEXT_PUBLIC_API_URL: http://backend:3001
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  default:
+    name: ecoloop-network
