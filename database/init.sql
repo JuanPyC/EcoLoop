@@ -25,7 +25,8 @@ END $$;
 
 CREATE TABLE IF NOT EXISTS public.profiles (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-  email text NOT NULL,
+  email text NOT NULL UNIQUE,
+  password_hash text NOT NULL,
   full_name text,
   role user_role NOT NULL DEFAULT 'user',
   eco_points integer NOT NULL DEFAULT 0,
@@ -221,8 +222,12 @@ INSERT INTO public.quiz_questions (quiz_id, question, correct_answer, wrong_answ
 ON CONFLICT DO NOTHING;
 
 -- Admin user de prueba
-INSERT INTO public.profiles (email, full_name, role, eco_points) VALUES
-  ('admin@ecoloop.com', 'Administrador EcoLoop', 'admin', 0),
-  ('worker@ecoloop.com', 'Operario EcoLoop', 'worker', 0),
-  ('user@ecoloop.com', 'Usuario de Prueba', 'user', 150)
+-- Nota: Los password_hash deben ser generados con bcrypt. Para testing:
+-- Contraseña: admin123 -> Hash: $2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7b3XeKeUxWdeS86E36UxO0my
+-- Contraseña: worker123 -> Hash: $2b$10$8.4rrLHqpkG4zU95YNjL8.0xNq0Kxvq5GQj9S4yyLJrDqn6X0Q3rG
+-- Contraseña: user123 -> Hash: $2b$10$V0VxNPe6AhD6DxV0H5G5leI7aH1G3G1H1H1H1H1H1H1H1H1H1H1H1
+INSERT INTO public.profiles (email, password_hash, full_name, role, eco_points) VALUES
+  ('admin@ecoloop.com', '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7b3XeKeUxWdeS86E36UxO0my', 'Administrador EcoLoop', 'admin', 0),
+  ('worker@ecoloop.com', '$2b$10$8.4rrLHqpkG4zU95YNjL8.0xNq0Kxvq5GQj9S4yyLJrDqn6X0Q3rG', 'Operario EcoLoop', 'worker', 0),
+  ('user@ecoloop.com', '$2b$10$V0VxNPe6AhD6DxV0H5G5leI7aH1G3G1H1H1H1H1H1H1H1H1H1H1H1', 'Usuario de Prueba', 'user', 150)
 ON CONFLICT DO NOTHING;

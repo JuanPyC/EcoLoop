@@ -14,10 +14,11 @@ export const findProfileByEmail = async (email: string) => {
   return prisma.profiles.findFirst({ where: { email } });
 };
 
-export const createProfile = async (data: { email: string; full_name?: string | null; role?: string; eco_points?: number }) => {
+export const createProfile = async (data: { email: string; password_hash: string; full_name?: string | null; role?: string; eco_points?: number }) => {
   return prisma.profiles.create({
     data: {
       email: data.email,
+      password_hash: data.password_hash,
       full_name: data.full_name ?? null,
       role: (data.role as any) ?? "user",
       eco_points: data.eco_points ?? 0,

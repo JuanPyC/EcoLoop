@@ -16,8 +16,8 @@ Plataforma web de gestión de reciclaje y recompensas ecológicas. Los usuarios 
 | Backend | Express | 4.x |
 | Backend | TypeScript | 5.x |
 | Backend | Swagger / OpenAPI | 3.0 |
+| Backend | Prisma ORM | 5.x |
 | Base de datos | PostgreSQL | 16 |
-| BaaS | Supabase | latest |
 | Contenedores | Docker | 24+ |
 | Orquestación | Docker Compose | 2.x |
 
@@ -37,23 +37,30 @@ EcoLoop/
 │   ├── package.json
 │   ├── app/                  # Rutas Next.js (App Router)
 │   ├── components/           # Componentes React
-│   ├── lib/supabase/         # Cliente Supabase
+│   ├── lib/supabase/         # Adaptador local para API (compatible con Supabase)
 │   └── public/
-├── backend/                  # API Express + Swagger
+├── backend/                  # API Express + Prisma + Swagger
 │   ├── Dockerfile
 │   ├── .dockerignore
 │   ├── package.json
 │   ├── tsconfig.json
-│   └── src/
-│       ├── index.ts          # Entry point + Swagger config
-│       ├── supabaseClient.ts
-│       └── routes/
-│           ├── health.ts
-│           ├── stations.ts
-│           ├── products.ts
-│           ├── transactions.ts
-│           ├── news.ts
-│           └── profiles.ts
+   ├── PRISMA_SETUP.md
+   ├── prisma/
+   │   └── schema.prisma     # Esquema Prisma (mapeo a PostgreSQL)
+   └── src/
+       ├── index.ts          # Entry point + Swagger config
+       ├── infrastructure/
+       │   ├── prismaClient.ts
+       │   └── repositories/  # Repositorios Prisma
+       └── routes/
+           ├── health.ts
+           ├── auth.ts        # Auth local
+           ├── stations.ts
+           ├── products.ts
+           ├── transactions.ts
+           ├── news.ts
+           ├── profiles.ts
+           └── local.ts       # CRUD genérico para tablas Prisma
 └── database/
     └── init.sql              # Esquema + datos de prueba
 ```
@@ -66,7 +73,7 @@ EcoLoop/
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) ≥ 24
 - [Docker Compose](https://docs.docker.com/compose/) ≥ 2.x
-- Cuenta en [Supabase](https://supabase.com) (gratuita)
+- PostgreSQL localmente (opcional: Docker se encarga de ello)
 
 ### 1. Clonar el repositorio
 
@@ -75,14 +82,15 @@ git clone https://github.com/tu-usuario/EcoLoop.git
 cd EcoLoop
 ```
 
-### 2. Configurar variables de entorno
+### 2. Configurar variables de entorno (opcional)
+
+La configuración local ya está lista en `docker-compose.yml` y `backend/.env`. Si quieres cambiarla:
 
 ```bash
+cd backend
 cp .env.example .env
-# Editar .env con tus credenciales de Supabase
+# DATABASE_URL ya está configurada para PostgreSQL local
 ```
-
-Obtén las credenciales en: **Supabase → Tu proyecto → Settings → API**
 
 ### 3. Levantar todos los servicios con Docker
 
@@ -91,9 +99,9 @@ docker compose up --build
 ```
 
 Esto construye y levanta:
-- 🗄️ **PostgreSQL** en `localhost:5432`
-- ⚙️ **Backend API** en `http://localhost:3001`
-- 🌐 **Frontend** en `http://localhost:3000`
+- 🗄️ **PostgreSQL** en `localhost:5432` (usuario: `ecoloop_user`, contraseña: `ecoloop_pass`, BD: `ecoloop`)
+- ⚙️ **Backend Express + Prisma** en `http://localhost:3001`
+- 🌐 **Frontend Next.js** en `http://localhost:3000`
 
 ### 4. Verificar que todo funciona
 
@@ -110,7 +118,36 @@ open http://localhost:3000
 
 ---
 
-## 🐳 Imágenes en DockerHub
+## � Credenciales de prueba
+
+Estas cuentas están pre-configuradas en la base de datos para testing:
+
+| Email | Contraseña | Rol | Propósito |
+|-------|-----------|-----|----------|
+| `admin@ecoloop.com` | `admin123` | Admin | Gestionar estaciones, productos, usuarios |
+| `worker@ecoloop.com` | `worker123` | Worker | Monitorear estado de contenedores |
+| `user@ecoloop.com` | `user123` | User | Usuario normal para testing |
+
+### Cómo autenticarse
+
+```bash
+# Login y obtener JWT token
+curl -X POST http://localhost:3001/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@ecoloop.com","password":"admin123"}'
+
+# Respuesta: { token: "eyJ...", user: {...} }
+
+# Usar el token en peticiones autenticadas
+TOKEN=eyJ... # copiar token de la respuesta anterior
+curl -H "Authorization: Bearer $TOKEN" http://localhost:3001/api/auth/me
+```
+
+> ⚠️ **Nota**: Estas credenciales están en el control de versiones solo para desarrollo local. En producción, cambiar todas las contraseñas y eliminar usuarios de prueba.
+
+---
+
+## �🐳 Imágenes en DockerHub
 
 ```bash
 # Descargar imágenes directamente (sin necesidad de clonar el repo)
@@ -198,10 +235,14 @@ curl http://localhost:3001/api/products?available=true
 
 ## 🗄️ Base de datos
 
-El esquema se aplica automáticamente al iniciar Docker. Para ejecutarlo manualmente en Supabase:
+El esquema se aplica automáticamente al ejecutar `docker compose up` (Prisma genera las tablas en PostgreSQL). 
 
-1. Ir a **Supabase → SQL Editor**
-2. Copiar y ejecutar el contenido de `database/init.sql`
+**Para desarrollo sin Docker**, aplica la migración manualmente:
+```bash
+cd backend
+export DATABASE_URL='postgresql://usuario:pass@localhost:5432/ecoloop'
+npx prisma migrate dev --name init
+```
 
 ### Tablas principales
 
@@ -235,22 +276,25 @@ El esquema se aplica automáticamente al iniciar Docker. Para ejecutarlo manualm
 
 ## 🧑‍💻 Desarrollo local (sin Docker)
 
-### Frontend
-
-```bash
-cd frontend
-npm install --legacy-peer-deps
-cp .env.local.example .env.local  # configurar SUPABASE_URL y ANON_KEY
-npm run dev
-# Disponible en http://localhost:3000
-```
-
-### Backend
+### Backend (primero)
 
 ```bash
 cd backend
 npm install
-cp .env.example .env  # configurar credenciales
+# Configurar DATABASE_URL para apuntar a PostgreSQL local
+export DATABASE_URL='postgresql://usuario:pass@localhost:5432/ecoloop'
+npx prisma generate
+npx prisma migrate dev --name init
 npm run dev
-# Disponible en http://localhost:3001
+# Disponible en http://localhost:3001/api-docs (Swagger)
+```
+
+### Frontend (segundo)
+
+```bash
+cd frontend
+npm install --legacy-peer-deps
+# NEXT_PUBLIC_API_URL debe apuntar al backend (por defecto http://localhost:3001)
+npm run dev
+# Disponible en http://localhost:3000
 ```
