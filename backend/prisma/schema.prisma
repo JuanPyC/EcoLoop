@@ -1,0 +1,143 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model profiles {
+  id               String             @id @default(uuid()) @db.Uuid
+  email            String
+  full_name        String?
+  role             UserRole           @default(user)
+  eco_points       Int                @default(0)
+  created_at       DateTime           @default(now())
+  updated_at       DateTime           @default(now())
+  transactions     transactions[]
+  news_articles    news_articles[]
+  redemptions      redemptions[]
+  quiz_completions quiz_completions[]
+}
+
+model waste_stations {
+  id          String       @id @default(uuid()) @db.Uuid
+  name        String
+  location    String
+  description String?
+  created_at  DateTime     @default(now())
+  updated_at  DateTime     @default(now())
+  waste_bins  waste_bins[]
+}
+
+model waste_bins {
+  id                  String         @id @default(uuid()) @db.Uuid
+  station_id          String         @db.Uuid
+  station             waste_stations @relation(fields: [station_id], references: [id])
+  waste_type          WasteType
+  capacity_percentage Int            @default(0)
+  needs_attention     Boolean        @default(false)
+  qr_code             String         @unique
+  created_at          DateTime       @default(now())
+  updated_at          DateTime       @default(now())
+  transactions        transactions[]
+}
+
+model products {
+  id           String        @id @default(uuid()) @db.Uuid
+  name         String
+  description  String?
+  points_cost  Int
+  image_url    String?
+  stock        Int           @default(0)
+  category     String
+  is_available Boolean       @default(true)
+  created_at   DateTime      @default(now())
+  updated_at   DateTime      @default(now())
+  redemptions  redemptions[]
+}
+
+model transactions {
+  id            String     @id @default(uuid()) @db.Uuid
+  user_id       String     @db.Uuid
+  user          profiles   @relation(fields: [user_id], references: [id])
+  bin_id        String     @db.Uuid
+  bin           waste_bins @relation(fields: [bin_id], references: [id])
+  points_earned Int
+  waste_type    WasteType
+  created_at    DateTime   @default(now())
+}
+
+model redemptions {
+  id           String   @id @default(uuid()) @db.Uuid
+  user_id      String   @db.Uuid
+  user         profiles @relation(fields: [user_id], references: [id])
+  product_id   String   @db.Uuid
+  product      products @relation(fields: [product_id], references: [id])
+  points_spent Int
+  quantity     Int      @default(1)
+  status       String   @default("pending")
+  created_at   DateTime @default(now())
+}
+
+model news_articles {
+  id         String    @id @default(uuid()) @db.Uuid
+  title      String
+  content    String
+  image_url  String?
+  author_id  String?   @db.Uuid
+  author     profiles? @relation(fields: [author_id], references: [id])
+  published  Boolean   @default(false)
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+}
+
+model quizzes {
+  id               String             @id @default(uuid()) @db.Uuid
+  title            String
+  description      String?
+  points_reward    Int                @default(10)
+  is_active        Boolean            @default(true)
+  created_at       DateTime           @default(now())
+  quiz_questions   quiz_questions[]
+  quiz_completions quiz_completions[]
+}
+
+model quiz_questions {
+  id             String   @id @default(uuid()) @db.Uuid
+  quiz_id        String   @db.Uuid
+  quiz           quizzes  @relation(fields: [quiz_id], references: [id])
+  question       String
+  correct_answer String
+  wrong_answer_1 String
+  wrong_answer_2 String
+  wrong_answer_3 String
+  order_index    Int
+  created_at     DateTime @default(now())
+}
+
+model quiz_completions {
+  id            String   @id @default(uuid()) @db.Uuid
+  user_id       String   @db.Uuid
+  user          profiles @relation(fields: [user_id], references: [id])
+  quiz_id       String   @db.Uuid
+  quiz          quizzes  @relation(fields: [quiz_id], references: [id])
+  score         Int
+  points_earned Int
+  completed_at  DateTime @default(now())
+
+  @@unique([user_id, quiz_id])
+}
+
+enum UserRole {
+  user
+  worker
+  admin
+}
+
+enum WasteType {
+  recyclable
+  non_recyclable
+  organic
+}

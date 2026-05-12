@@ -10,6 +10,8 @@ import { transactionsRouter } from "./routes/transactions";
 import { newsRouter } from "./routes/news";
 import { profilesRouter } from "./routes/profiles";
 import { healthRouter } from "./routes/health";
+import { authRouter } from "./routes/auth";
+import { localRouter } from "./routes/local";
 
 dotenv.config();
 
@@ -153,11 +155,13 @@ app.get("/api-docs.json", (_req, res) => {
 
 // Routes
 app.use("/api/health", healthRouter);
+app.use("/api/auth", authRouter);
 app.use("/api/stations", stationsRouter);
 app.use("/api/products", productsRouter);
 app.use("/api/transactions", transactionsRouter);
 app.use("/api/news", newsRouter);
 app.use("/api/profiles", profilesRouter);
+app.use("/api/local", localRouter);
 
 // Root
 app.get("/", (_req, res) => {

@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { supabase } from "../supabaseClient";
+import { findTransactions, findBinByQr, createTransaction, getProfilePoints, updateProfilePoints } from "../infrastructure/repositories/transactionsRepository";
 
 export const transactionsRouter = Router();
 
@@ -34,11 +34,13 @@ export const transactionsRouter = Router();
  *                 $ref: '#/components/schemas/Transaction'
  */
 transactionsRouter.get("/", async (req: Request, res: Response) => {
-  let query = supabase.from("transactions").select("*, profiles(full_name, email), waste_bins(waste_type, qr_code)");
-  if (req.query.user_id) query = query.eq("user_id", req.query.user_id as string);
-  const { data, error } = await query.order("created_at", { ascending: false });
-  if (error) return res.status(500).json({ error: error.message });
-  return res.json(data);
+  try {
+    const user_id = req.query.user_id as string | undefined;
+    const data = await findTransactions(user_id ? { user_id } : undefined);
+    return res.json(data);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
 });
 
 /**
@@ -101,13 +103,8 @@ transactionsRouter.post("/scan", async (req: Request, res: Response) => {
   }
 
   // Find bin by QR code
-  const { data: bin, error: binError } = await supabase
-    .from("waste_bins")
-    .select("*")
-    .eq("qr_code", qr_code)
-    .single();
-
-  if (binError || !bin) {
+  const bin = await findBinByQr(qr_code);
+  if (!bin) {
     return res.status(400).json({ error: "Código QR inválido o no encontrado" });
   }
 
@@ -120,23 +117,12 @@ transactionsRouter.post("/scan", async (req: Request, res: Response) => {
   const points_earned = pointsMap[bin.waste_type] || 5;
 
   // Create transaction
-  const { data: transaction, error: txError } = await supabase
-    .from("transactions")
-    .insert({ user_id, bin_id: bin.id, points_earned, waste_type: bin.waste_type })
-    .select()
-    .single();
-
-  if (txError) return res.status(400).json({ error: txError.message });
+  const transaction = await createTransaction({ user_id, bin_id: bin.id, points_earned, waste_type: bin.waste_type });
 
   // Update user eco_points
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("eco_points")
-    .eq("id", user_id)
-    .single();
-
-  const newPoints = (profile?.eco_points || 0) + points_earned;
-  await supabase.from("profiles").update({ eco_points: newPoints }).eq("id", user_id);
+  const currentPoints = await getProfilePoints(user_id);
+  const newPoints = (currentPoints || 0) + points_earned;
+  await updateProfilePoints(user_id, newPoints);
 
   return res.status(201).json({
     transaction,

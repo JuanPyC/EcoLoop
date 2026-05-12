@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { supabase } from "../supabaseClient";
+import { listStations, getStationById, createStation, updateStation, deleteStation } from "../infrastructure/repositories/stationsRepository";
 
 export const stationsRouter = Router();
 
@@ -29,11 +29,12 @@ export const stationsRouter = Router();
  *         $ref: '#/components/schemas/Error'
  */
 stationsRouter.get("/", async (_req: Request, res: Response) => {
-  const { data, error } = await supabase
-    .from("waste_stations")
-    .select("*, waste_bins(*)");
-  if (error) return res.status(500).json({ error: error.message });
-  return res.json(data);
+  try {
+    const data = await listStations();
+    return res.json(data);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
 });
 
 /**
@@ -63,14 +64,13 @@ stationsRouter.get("/", async (_req: Request, res: Response) => {
  *         $ref: '#/components/schemas/Error'
  */
 stationsRouter.get("/:id", async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { data, error } = await supabase
-    .from("waste_stations")
-    .select("*, waste_bins(*)")
-    .eq("id", id)
-    .single();
-  if (error) return res.status(404).json({ error: "Estación no encontrada" });
-  return res.json(data);
+  try {
+    const data = await getStationById(req.params.id);
+    if (!data) return res.status(404).json({ error: "Estación no encontrada" });
+    return res.json(data);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
 });
 
 /**
@@ -108,17 +108,14 @@ stationsRouter.get("/:id", async (req: Request, res: Response) => {
  *         $ref: '#/components/schemas/Error'
  */
 stationsRouter.post("/", async (req: Request, res: Response) => {
-  const { name, location, description } = req.body;
-  if (!name || !location) {
-    return res.status(400).json({ error: "name y location son requeridos" });
+  try {
+    const { name, location, description } = req.body;
+    if (!name || !location) return res.status(400).json({ error: "name y location son requeridos" });
+    const data = await createStation({ name, location, description });
+    return res.status(201).json(data);
+  } catch (err: any) {
+    return res.status(400).json({ error: err.message });
   }
-  const { data, error } = await supabase
-    .from("waste_stations")
-    .insert({ name, location, description })
-    .select()
-    .single();
-  if (error) return res.status(400).json({ error: error.message });
-  return res.status(201).json(data);
 });
 
 /**
@@ -155,16 +152,13 @@ stationsRouter.post("/", async (req: Request, res: Response) => {
  *         description: No encontrada
  */
 stationsRouter.put("/:id", async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { name, location, description } = req.body;
-  const { data, error } = await supabase
-    .from("waste_stations")
-    .update({ name, location, description, updated_at: new Date().toISOString() })
-    .eq("id", id)
-    .select()
-    .single();
-  if (error) return res.status(404).json({ error: error.message });
-  return res.json(data);
+  try {
+    const { id } = req.params;
+    const data = await updateStation(id, { ...req.body, updated_at: new Date() });
+    return res.json(data);
+  } catch (err: any) {
+    return res.status(404).json({ error: err.message });
+  }
 });
 
 /**
@@ -189,8 +183,11 @@ stationsRouter.put("/:id", async (req: Request, res: Response) => {
  *         description: No encontrada
  */
 stationsRouter.delete("/:id", async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { error } = await supabase.from("waste_stations").delete().eq("id", id);
-  if (error) return res.status(404).json({ error: error.message });
-  return res.status(204).send();
+  try {
+    const { id } = req.params;
+    await deleteStation(id);
+    return res.status(204).send();
+  } catch (err: any) {
+    return res.status(404).json({ error: err.message });
+  }
 });

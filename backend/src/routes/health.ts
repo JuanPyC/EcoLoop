@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { supabase } from "../supabaseClient";
+import prisma from "../infrastructure/prismaClient";
 
 export const healthRouter = Router();
 
@@ -34,9 +34,10 @@ export const healthRouter = Router();
 healthRouter.get("/", async (_req, res) => {
   let dbStatus = "disconnected";
   try {
-    const { error } = await supabase.from("profiles").select("id").limit(1);
-    if (!error) dbStatus = "connected";
-  } catch {
+    const test = await prisma.profiles.findFirst({ select: { id: true } });
+    if (test) dbStatus = "connected";
+    else dbStatus = "connected"; // DB reachable but maybe empty
+  } catch (e) {
     dbStatus = "disconnected";
   }
 

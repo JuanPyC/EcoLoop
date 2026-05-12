@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { supabase } from "../supabaseClient";
+import { listNews, getNewsById, createNews, deleteNews } from "../infrastructure/repositories/newsRepository";
 
 export const newsRouter = Router();
 
@@ -33,11 +33,13 @@ export const newsRouter = Router();
  *                 $ref: '#/components/schemas/NewsArticle'
  */
 newsRouter.get("/", async (req: Request, res: Response) => {
-  let query = supabase.from("news_articles").select("*");
-  if (req.query.published === "true") query = query.eq("published", true);
-  const { data, error } = await query.order("created_at", { ascending: false });
-  if (error) return res.status(500).json({ error: error.message });
-  return res.json(data);
+  try {
+    const published = req.query.published === "true";
+    const data = await listNews(req.query.published ? { published } : undefined);
+    return res.json(data);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
 });
 
 /**
@@ -64,13 +66,13 @@ newsRouter.get("/", async (req: Request, res: Response) => {
  *         description: No encontrado
  */
 newsRouter.get("/:id", async (req: Request, res: Response) => {
-  const { data, error } = await supabase
-    .from("news_articles")
-    .select("*")
-    .eq("id", req.params.id)
-    .single();
-  if (error) return res.status(404).json({ error: "Artículo no encontrado" });
-  return res.json(data);
+  try {
+    const data = await getNewsById(req.params.id);
+    if (!data) return res.status(404).json({ error: "Artículo no encontrado" });
+    return res.json(data);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
 });
 
 /**
@@ -102,17 +104,14 @@ newsRouter.get("/:id", async (req: Request, res: Response) => {
  *         description: Artículo creado
  */
 newsRouter.post("/", async (req: Request, res: Response) => {
-  const { title, content, image_url, published } = req.body;
-  if (!title || !content) {
-    return res.status(400).json({ error: "title y content son requeridos" });
+  try {
+    const { title, content, image_url, published } = req.body;
+    if (!title || !content) return res.status(400).json({ error: "title y content son requeridos" });
+    const data = await createNews({ title, content, image_url, published: published || false });
+    return res.status(201).json(data);
+  } catch (err: any) {
+    return res.status(400).json({ error: err.message });
   }
-  const { data, error } = await supabase
-    .from("news_articles")
-    .insert({ title, content, image_url, published: published || false })
-    .select()
-    .single();
-  if (error) return res.status(400).json({ error: error.message });
-  return res.status(201).json(data);
 });
 
 /**
@@ -135,7 +134,10 @@ newsRouter.post("/", async (req: Request, res: Response) => {
  *         description: Eliminado
  */
 newsRouter.delete("/:id", async (req: Request, res: Response) => {
-  const { error } = await supabase.from("news_articles").delete().eq("id", req.params.id);
-  if (error) return res.status(400).json({ error: error.message });
-  return res.status(204).send();
+  try {
+    await deleteNews(req.params.id);
+    return res.status(204).send();
+  } catch (err: any) {
+    return res.status(400).json({ error: err.message });
+  }
 });

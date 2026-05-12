@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { supabase } from "../supabaseClient";
+import { listProducts, getProductById, createProduct, updateProduct, deleteProduct } from "../infrastructure/repositories/productsRepository";
 
 export const productsRouter = Router();
 
@@ -38,12 +38,14 @@ export const productsRouter = Router();
  *                 $ref: '#/components/schemas/Product'
  */
 productsRouter.get("/", async (req: Request, res: Response) => {
-  let query = supabase.from("products").select("*");
-  if (req.query.available === "true") query = query.eq("is_available", true);
-  if (req.query.category) query = query.eq("category", req.query.category as string);
-  const { data, error } = await query.order("name");
-  if (error) return res.status(500).json({ error: error.message });
-  return res.json(data);
+  try {
+    const available = req.query.available === "true";
+    const category = req.query.category as string | undefined;
+    const data = await listProducts({ available: req.query.available ? available : undefined, category });
+    return res.json(data);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
 });
 
 /**
@@ -70,13 +72,13 @@ productsRouter.get("/", async (req: Request, res: Response) => {
  *         description: Producto no encontrado
  */
 productsRouter.get("/:id", async (req: Request, res: Response) => {
-  const { data, error } = await supabase
-    .from("products")
-    .select("*")
-    .eq("id", req.params.id)
-    .single();
-  if (error) return res.status(404).json({ error: "Producto no encontrado" });
-  return res.json(data);
+  try {
+    const data = await getProductById(req.params.id);
+    if (!data) return res.status(404).json({ error: "Producto no encontrado" });
+    return res.json(data);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
 });
 
 /**
@@ -116,17 +118,16 @@ productsRouter.get("/:id", async (req: Request, res: Response) => {
  *               $ref: '#/components/schemas/Product'
  */
 productsRouter.post("/", async (req: Request, res: Response) => {
-  const { name, description, points_cost, stock, category, image_url } = req.body;
-  if (!name || !points_cost || !category) {
-    return res.status(400).json({ error: "name, points_cost y category son requeridos" });
+  try {
+    const { name, description, points_cost, stock, category, image_url } = req.body;
+    if (!name || !points_cost || !category) {
+      return res.status(400).json({ error: "name, points_cost y category son requeridos" });
+    }
+    const data = await createProduct({ name, description, points_cost, stock: stock || 0, category, image_url });
+    return res.status(201).json(data);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
   }
-  const { data, error } = await supabase
-    .from("products")
-    .insert({ name, description, points_cost, stock: stock || 0, category, image_url })
-    .select()
-    .single();
-  if (error) return res.status(400).json({ error: error.message });
-  return res.status(201).json(data);
 });
 
 /**
@@ -154,16 +155,13 @@ productsRouter.post("/", async (req: Request, res: Response) => {
  *         description: Producto actualizado
  */
 productsRouter.put("/:id", async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { name, description, points_cost, stock, category, is_available, image_url } = req.body;
-  const { data, error } = await supabase
-    .from("products")
-    .update({ name, description, points_cost, stock, category, is_available, image_url, updated_at: new Date().toISOString() })
-    .eq("id", id)
-    .select()
-    .single();
-  if (error) return res.status(400).json({ error: error.message });
-  return res.json(data);
+  try {
+    const { id } = req.params;
+    const data = await updateProduct(id, { ...req.body, updated_at: new Date() });
+    return res.json(data);
+  } catch (err: any) {
+    return res.status(400).json({ error: err.message });
+  }
 });
 
 /**
@@ -186,7 +184,10 @@ productsRouter.put("/:id", async (req: Request, res: Response) => {
  *         description: Eliminado exitosamente
  */
 productsRouter.delete("/:id", async (req: Request, res: Response) => {
-  const { error } = await supabase.from("products").delete().eq("id", req.params.id);
-  if (error) return res.status(400).json({ error: error.message });
-  return res.status(204).send();
+  try {
+    await deleteProduct(req.params.id);
+    return res.status(204).send();
+  } catch (err: any) {
+    return res.status(400).json({ error: err.message });
+  }
 });

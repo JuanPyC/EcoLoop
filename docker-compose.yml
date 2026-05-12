@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   # ─────────────────────────────────────────────
   # BASE DE DATOS — PostgreSQL
@@ -37,12 +35,7 @@ services:
     environment:
       PORT: 3001
       NODE_ENV: production
-      # Conexión a PostgreSQL local (para pruebas sin Supabase)
       DATABASE_URL: postgresql://ecoloop_user:ecoloop_pass@db:5432/ecoloop
-      # Supabase (reemplazar con tus credenciales reales)
-      SUPABASE_URL: ${SUPABASE_URL:-https://tu-proyecto.supabase.co}
-      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-tu-anon-key}
-      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-tu-service-key}
       FRONTEND_URL: http://localhost:3000
     depends_on:
       db:
@@ -62,8 +55,6 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_SUPABASE_URL: ${SUPABASE_URL:-https://tu-proyecto.supabase.co}
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-tu-anon-key}
         NEXT_PUBLIC_API_URL: http://localhost:3001
     container_name: ecoloop-frontend
     restart: unless-stopped
@@ -71,8 +62,6 @@ services:
       - "3000:3000"
     environment:
       NODE_ENV: production
-      NEXT_PUBLIC_SUPABASE_URL: ${SUPABASE_URL:-https://tu-proyecto.supabase.co}
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-tu-anon-key}
       NEXT_PUBLIC_API_URL: http://backend:3001
     depends_on:
       backend:
