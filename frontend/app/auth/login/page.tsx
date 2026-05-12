@@ -39,17 +39,14 @@ export default function LoginPage() {
       } = await supabase.auth.getUser()
       if (!user) throw new Error("No se pudo obtener el usuario")
 
-      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single()
-
       // Redirect based on role
-      if (profile?.role === "admin") {
-        router.push("/admin")
-      } else if (profile?.role === "worker") {
-        router.push("/worker")
-      } else {
-        router.push("/user")
-      }
+      const role = user.role || "user"
+      console.log("Login exitoso, rol:", role)
+      
+      const redirectPath = role === "admin" ? "/admin" : role === "worker" ? "/worker" : "/user"
+      window.location.href = redirectPath
     } catch (error: unknown) {
+      console.error("Error en login:", error)
       setError(error instanceof Error ? error.message : "Error al iniciar sesión")
     } finally {
       setIsLoading(false)

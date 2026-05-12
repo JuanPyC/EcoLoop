@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -12,7 +13,7 @@ model profiles {
   email            String             @unique
   password_hash    String
   full_name        String?
-  role             UserRole           @default(user)
+  role             user_role          @default(user)
   eco_points       Int                @default(0)
   created_at       DateTime           @default(now())
   updated_at       DateTime           @default(now())
@@ -36,7 +37,7 @@ model waste_bins {
   id                  String         @id @default(uuid()) @db.Uuid
   station_id          String         @db.Uuid
   station             waste_stations @relation(fields: [station_id], references: [id])
-  waste_type          WasteType
+  waste_type          waste_type
   capacity_percentage Int            @default(0)
   needs_attention     Boolean        @default(false)
   qr_code             String         @unique
@@ -66,7 +67,7 @@ model transactions {
   bin_id        String     @db.Uuid
   bin           waste_bins @relation(fields: [bin_id], references: [id])
   points_earned Int
-  waste_type    WasteType
+  waste_type    waste_type
   created_at    DateTime   @default(now())
 }
 
@@ -131,13 +132,13 @@ model quiz_completions {
   @@unique([user_id, quiz_id])
 }
 
-enum UserRole {
+enum user_role {
   user
   worker
   admin
 }
 
-enum WasteType {
+enum waste_type {
   recyclable
   non_recyclable
   organic

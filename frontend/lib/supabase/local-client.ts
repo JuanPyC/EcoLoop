@@ -4,6 +4,7 @@ type Session = {
   full_name?: string | null
   role: string
   eco_points?: number
+  token?: string
 }
 
 type QueryResult<T> = Promise<{ data: T | null; error: Error | null; count?: number | null }>
@@ -34,7 +35,13 @@ const parseCookie = (cookieHeader: string | null | undefined, key: string) => {
 
 const tablePath = (table: string) => `/api/local/${table}`
 
-const headers = { "Content-Type": "application/json" }
+const getHeaders = (session?: Session | null) => {
+  const headers: Record<string, string> = { "Content-Type": "application/json" }
+  if (session?.token) {
+    headers["Authorization"] = `Bearer ${session.token}`
+  }
+  return headers
+}
 
 class LocalQueryBuilder<T = any> {
   private filters: Array<{ column: string; value: string }> = []
@@ -91,7 +98,10 @@ class LocalQueryBuilder<T = any> {
       if (typeof this.take === "number") search.set("limit", String(this.take))
       if (this.head) search.set("head", "true")
 
-      const response = await fetch(`${this.options.baseUrl}${tablePath(this.table)}${search.toString() ? `?${search.toString()}` : ""}`)
+      const session = this.options.getSession()
+      const response = await fetch(`${this.options.baseUrl}${tablePath(this.table)}${search.toString() ? `?${search.toString()}` : ""}`, {
+        headers: getHeaders(session),
+      })
       const payload = await response.json().catch(() => null)
 
       if (!response.ok) {
@@ -128,10 +138,11 @@ class LocalQueryBuilder<T = any> {
 
 async function runMutation(options: ClientOptions, table: string, method: "POST" | "PUT" | "DELETE", payload: any, id?: string) {
   try {
+    const session = options.getSession()
     const path = id ? `${tablePath(table)}/${id}` : tablePath(table)
     const response = await fetch(`${options.baseUrl}${path}`, {
       method,
-      headers,
+      headers: getHeaders(session),
       body: method === "DELETE" ? undefined : JSON.stringify(payload),
     })
     const responsePayload = await response.json().catch(() => null)
@@ -148,36 +159,41 @@ async function runMutation(options: ClientOptions, table: string, method: "POST"
 export function createLocalClient(options: ClientOptions) {
   return {
     auth: {
-      async signInWithPassword({ email }: { email: string; password: string }) {
+      async signInWithPassword({ email, password }: { email: string; password: string }) {
         try {
           const response = await fetch(`${options.baseUrl}/api/auth/login`, {
             method: "POST",
-            headers,
-            body: JSON.stringify({ email }),
+            headers: getHeaders(),
+            body: JSON.stringify({ email, password }),
           })
           const payload = await response.json().catch(() => null)
           if (!response.ok) return { data: null, error: new Error(payload?.error || "Error al iniciar sesión") }
-          options.setSession(payload.user)
-          return { data: { user: payload.user }, error: null }
+          
+          const sessionWithToken = { ...payload.user, token: payload.token }
+          options.setSession(sessionWithToken)
+          return { data: { user: sessionWithToken }, error: null }
         } catch (error: any) {
           return { data: null, error: error instanceof Error ? error : new Error(String(error)) }
         }
       },
-      async signUp({ email, options: signupOptions }: { email: string; password: string; options?: { data?: { full_name?: string; role?: string } } }) {
+      async signUp({ email, password, options: signupOptions }: { email: string; password: string; options?: { data?: { full_name?: string; role?: string } } }) {
         try {
           const response = await fetch(`${options.baseUrl}/api/auth/register`, {
             method: "POST",
-            headers,
+            headers: getHeaders(),
             body: JSON.stringify({
               email,
+              password,
               full_name: signupOptions?.data?.full_name,
               role: signupOptions?.data?.role,
             }),
           })
           const payload = await response.json().catch(() => null)
           if (!response.ok) return { data: null, error: new Error(payload?.error || "Error al registrarse") }
-          options.setSession(payload.user)
-          return { data: { user: payload.user }, error: null }
+          
+          const sessionWithToken = { ...payload.user, token: payload.token }
+          options.setSession(sessionWithToken)
+          return { data: { user: sessionWithToken }, error: null }
         } catch (error: any) {
           return { data: null, error: error instanceof Error ? error : new Error(String(error)) }
         }
@@ -236,6 +252,11 @@ export function createServerSessionHelpers(cookieValue: string | undefined | nul
 }
 
 export function getApiBaseUrl() {
+  if (typeof window === "undefined") {
+    // Server side: use internal docker network
+    return process.env.API_URL || "http://backend:3001"
+  }
+  // Client side: use baked-in NEXT_PUBLIC_API_URL or fallback
   return process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
 }
 
