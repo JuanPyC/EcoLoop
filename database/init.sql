@@ -223,11 +223,11 @@ ON CONFLICT DO NOTHING;
 
 -- Admin user de prueba
 -- Nota: Los password_hash deben ser generados con bcrypt. Para testing:
--- Contraseña: admin123 -> Hash: $2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7b3XeKeUxWdeS86E36UxO0my
--- Contraseña: worker123 -> Hash: $2b$10$8.4rrLHqpkG4zU95YNjL8.0xNq0Kxvq5GQj9S4yyLJrDqn6X0Q3rG
--- Contraseña: user123 -> Hash: $2b$10$V0VxNPe6AhD6DxV0H5G5leI7aH1G3G1H1H1H1H1H1H1H1H1H1H1H1
+-- Contraseña: admin123 -> Hash: $2b$10$tcOQQMM2EDuMr2DKLSw4D.CjE8Ivvr4SBmhz5aKUgz6pb0m8aS5A2
+-- Contraseña: worker123 -> Hash: $2b$10$WFDB.WzoYqXjWDNf3fahgOB9C95BPtBMOHl/I30F9FkOHmLrPXxja
+-- Contraseña: user123 -> Hash: $2b$10$neFUquCPYRvSSxagvbEENOPop2y0BUYXZ5Zy1siVxGiqKnJmKhbGC
 INSERT INTO public.profiles (email, password_hash, full_name, role, eco_points) VALUES
-  ('admin@ecoloop.com', '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7b3XeKeUxWdeS86E36UxO0my', 'Administrador EcoLoop', 'admin', 0),
-  ('worker@ecoloop.com', '$2b$10$8.4rrLHqpkG4zU95YNjL8.0xNq0Kxvq5GQj9S4yyLJrDqn6X0Q3rG', 'Operario EcoLoop', 'worker', 0),
-  ('user@ecoloop.com', '$2b$10$V0VxNPe6AhD6DxV0H5G5leI7aH1G3G1H1H1H1H1H1H1H1H1H1H1H1', 'Usuario de Prueba', 'user', 150)
+  ('admin@ecoloop.com', '$2b$10$tcOQQMM2EDuMr2DKLSw4D.CjE8Ivvr4SBmhz5aKUgz6pb0m8aS5A2', 'Administrador EcoLoop', 'admin', 0),
+  ('worker@ecoloop.com', '$2b$10$WFDB.WzoYqXjWDNf3fahgOB9C95BPtBMOHl/I30F9FkOHmLrPXxja', 'Operario EcoLoop', 'worker', 0),
+  ('user@ecoloop.com', '$2b$10$neFUquCPYRvSSxagvbEENOPop2y0BUYXZ5Zy1siVxGiqKnJmKhbGC', 'Usuario de Prueba', 'user', 150)
 ON CONFLICT DO NOTHING;

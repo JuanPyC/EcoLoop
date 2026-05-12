@@ -1,5 +1,6 @@
 # Stage 1: Builder
 FROM node:22-alpine AS builder
+RUN apk add --no-cache openssl
 WORKDIR /app
 COPY package.json ./
 RUN npm install
@@ -11,7 +12,7 @@ RUN npm run build
 FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-RUN apk add --no-cache curl
+RUN apk add --no-cache openssl curl
 
 # Copy built artifacts
 COPY --from=builder /app/dist ./dist
